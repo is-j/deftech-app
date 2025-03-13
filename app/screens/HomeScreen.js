@@ -8,13 +8,10 @@ import {
   ActivityIndicator,
   FlatList,
 } from "react-native";
-import {
-  getDailyStockData,
-  getCompanyOverview,
-  getQuote,
-} from "../services/alphaVantageService";
+import { getStockQuote, getCompanyDetails } from "../services/polygonAPI";
 
-const USE_MOCK_DATA = true;
+
+const USE_MOCK_DATA = false;
 
 const DEFENSE_STOCKS = [
   {
@@ -83,13 +80,14 @@ const HomeScreen = ({ navigation }) => {
             }
             const price = (Math.random() * 100 + 50).toFixed(2);
             const change = (Math.random() * 100 + 50).toFixed(2);
+            const isPositive = parseFloat(change) >= 0;
             const changePercent = ((change / price) * 100).toFixed(2);
 
             return {
               ...stock,
               price,
-              change: parseFloat(change) >= 0 ? `+${change}` : change,
-              changePercent: `${changePercent}%`,
+              change: isPositive ? `+${change}` : `${change}`,
+              changePercent: `${isPositive ? '+' : ''}${changePercent}%`,
             };
           });
 
@@ -102,7 +100,7 @@ const HomeScreen = ({ navigation }) => {
           (stock) => stock.symbol !== "PRIVATE"
         );
 
-        const promises = publicStocks.map((stock) => getQuote(stock.symbol));
+        const promises = publicStocks.map((stock) => getStockQuote(stock.symbol));
 
         const results = await Promise.all(promises);
 
@@ -119,21 +117,20 @@ const HomeScreen = ({ navigation }) => {
           const index = publicStocks.findIndex(
             (s) => s.symbol === stock.symbol
           );
-          const quoteData = results[index]["Global Quote"];
+          const quoteData = results[index];
+          console.log(`Response data structure for ${stock.symbol}:`, JSON.stringify(quoteData));
 
-          if (quoteData) {
-            const price = parseFloat(quoteData["0.5. price"]).toFixed(2);
-            const change = parseFloat(quoteData["0.9. change"]).toFixed(2);
-            const changePercent = quoteData["10. change percent"].replace(
-              "%",
-              ""
-            );
+          if (quoteData && quoteData.results && quoteData.results.length > 0) {
+            const result = quoteData.results[0];
+            const price = result.c.toFixed(2);
+            const change = (result.c - result.o).toFixed(2);
+            const changePercent = ((change / result.o) * 100).toFixed(2);
 
             return {
               ...stock,
               price,
-              change: change >= 0 ? "${change}" : change,
-              changePercent: "${changePercent}%",
+              change: change >= 0 ? `${change}` : change,
+              changePercent: `${changePercent}%`,
             };
           }
 
@@ -145,8 +142,11 @@ const HomeScreen = ({ navigation }) => {
           };
         });
 
+        console.log("updating stocks data: ", updatedStocks);
+
         setStocksData(updatedStocks);
-        setLoading(false);
+        console.log("settling loading to false")
+        setLoading(true);
       } catch (error) {
         console.error("error fetching stock data: ", error);
         setError("Failed to fetch stock data, try again later");
@@ -188,7 +188,12 @@ const HomeScreen = ({ navigation }) => {
     >
       <View style={styles.stockHeader}>
         <Text style={styles.stockName}>{item.name}</Text>
-        <Text style={styles.stockSymbol}>{item.symbol}</Text>
+        {item.symbol !== "PRIVATE" ? (
+        <Text style={[styles.stockSymbol, parseFloat(item.change) >= 0 ? styles.positiveChange : styles.negativeChange]}>{item.symbol}
+        </Text>
+        ) : (
+          <Text style={styles.privateSymbol}>PRIVATE</Text>
+        )}
       </View>
 
       <Text style={styles.stockDescription} numberOfLines={2}>
@@ -196,16 +201,15 @@ const HomeScreen = ({ navigation }) => {
       </Text>
 
       <View style={styles.stockMetrics}>
-        {item.symbol !== "PRIVATE" ? (
+        {item.symbol !== "PRIVATE" ? ( 
           item.price !== "N/A" ? (
             <>
               <Text style={styles.stockPrice}>${item.price}</Text>
               <Text
                 style={[
                   styles.stockChange,
-                  item.change.startsWith("+")
-                    ? styles.positiveChange
-                    : styles.negativeChange,
+                  parseFloat(item.change) >= 0 ?  styles.positiveChange : styles.negativeChange
+
                 ]}
               >
                 {item.change} ({item.changePercent})
@@ -224,7 +228,7 @@ const HomeScreen = ({ navigation }) => {
   const renderCategoryFilter = () => (
     <View style={styles.categoryFilter}>
       <TouchableOpacity
-        stle={[
+        style={[
           styles.categoryButton,
           selectedCategory === "all" && styles.activeCategoryButton,
         ]}
@@ -250,7 +254,7 @@ const HomeScreen = ({ navigation }) => {
         ]}
         onPress={() => setSelectedCategory("upcoming")}
       >
-        <Text stle={styles.categoryButtonText}>Upcoming</Text>
+        <Text style={styles.categoryButtonText}>Upcoming</Text>
       </TouchableOpacity>
     </View>
   );
@@ -268,7 +272,7 @@ const HomeScreen = ({ navigation }) => {
 
       {loading && stocksData.length === 0 ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="00FF00" />
+          <ActivityIndicator size="large" color="#00FF00" />
           <Text style={styles.loadingText}>Loading defense stocks...</Text>
         </View>
       ) : error ? (
@@ -307,11 +311,108 @@ const styles = StyleSheet.create({
   },
   categoryFilter: {
     flexDirection: "row",
+    marginBottom: 16,
   },
-  text: {
-    color: "#FFFFFF",
+  categoryButton:{
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16, 
+    backgroundColor: '#2A2A2A', 
+    marginRight: 8,
+  },
+  activeCategoryButton: {
+    backgroundColor: '#006600',
+  },
+  categoryButtonText:{
+    color: "#FFFFFF"
+  },
+  stockList:{
+    paddingBottom: 16,
+  },
+  stockCard: {
+    backgroundColor: '#1E1E1E',
+    borderRadius: 12, 
+    padding: 16,
+    marginBottom: 12,
+  },
+  stockHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  stockName: {
+    color: "#FFFFFF", 
+    fontSize: 16,
+    fontWeight: 'bold',
+    flex: 1,
+  },
+  stockSymbol: {
+    fontSize: 14, 
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  stockDescription: {
+    color: '#CCCCCC',
+    fontSize: 14, 
+    marginBottom: 12,
+  },
+  stockMetrics:{
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stockPrice: {
+    color: "#FFFFFF", 
     fontSize: 18,
+    fontWeight: 'bold',
+    marginRight: 12,
   },
+  stockChange: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  positiveChange: {
+    color: '#00FF00',
+  },
+  negativeChange: {
+    color: '#FF4444',
+  },
+  privateStock: {
+    color: '#BBBBBB',
+    fontStyle: 'italic',
+  },
+  loadingPrice: {
+    color: '#AAAAAA',
+    fontStyle: 'italic',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    fontSize: 16, 
+    marginTop: 18,
+    fontWeight: 'bold',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: '#FF4444',
+    textAlign: 'center'
+  },
+  privateSymbol: {
+    color: '#BBBBBB',
+    fontSize: 14, 
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  
 });
 
 export default HomeScreen;
