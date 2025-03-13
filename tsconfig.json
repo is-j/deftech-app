@@ -13,6 +13,11 @@
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-, "App.tsx", "index.js", "app/screens/HomeScreen.js"  ]
+    "expo-env.d.ts",
+    "App.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.js"
+  ]
 }

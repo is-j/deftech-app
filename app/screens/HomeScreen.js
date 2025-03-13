@@ -14,6 +14,8 @@ import {
   getQuote,
 } from "../services/alphaVantageService";
 
+const USE_MOCK_DATA = true;
+
 const DEFENSE_STOCKS = [
   {
     id: "1",
@@ -68,6 +70,33 @@ const HomeScreen = ({ navigation }) => {
       try {
         setLoading(true);
         setError(null);
+
+        if (USE_MOCK_DATA) {
+          const mockData = DEFENSE_STOCKS.map((stock) => {
+            if (stock.symbol === "PRIVATE") {
+              return {
+                ...stock,
+                price: "N/A",
+                change: "N/A",
+                changePercent: "N/A",
+              };
+            }
+            const price = (Math.random() * 100 + 50).toFixed(2);
+            const change = (Math.random() * 100 + 50).toFixed(2);
+            const changePercent = ((change / price) * 100).toFixed(2);
+
+            return {
+              ...stock,
+              price,
+              change: parseFloat(change) >= 0 ? `+${change}` : change,
+              changePercent: `${changePercent}%`,
+            };
+          });
+
+          setStocksData(mockData);
+          setLoading(false);
+          return;
+        }
 
         const publicStocks = DEFENSE_STOCKS.filter(
           (stock) => stock.symbol !== "PRIVATE"
@@ -228,7 +257,7 @@ const HomeScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <TextInput
-        style={style.searchBar}
+        style={styles.searchBar}
         placeholder="Search defense stocks..."
         placeholderTextColor="#999999"
         value={searchQuery}
@@ -239,7 +268,7 @@ const HomeScreen = ({ navigation }) => {
 
       {loading && stocksData.length === 0 ? (
         <View style={styles.loadingContainer}>
-          <ActivityInidcator size="large" color="00FF00" />
+          <ActivityIndicator size="large" color="00FF00" />
           <Text style={styles.loadingText}>Loading defense stocks...</Text>
         </View>
       ) : error ? (
@@ -266,9 +295,18 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: "#121212",
+    padding: 16,
+  },
+  searchBar: {
+    backgroundColor: "#2A2A2A",
+    borderRadius: 8,
+    padding: 12,
+    color: "#FFFFFF",
+    marginBottom: 16,
+  },
+  categoryFilter: {
+    flexDirection: "row",
   },
   text: {
     color: "#FFFFFF",
