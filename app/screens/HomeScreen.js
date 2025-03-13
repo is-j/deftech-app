@@ -78,7 +78,7 @@ const HomeScreen = ({navigation}) => {
             return{
               ...stock,
               price,
-              change: change >= 0 ? '+${change}' : change,
+              change: change >= 0 ? '\${change}' : change,
               changePercent: '${changePercent}%'
             };
 
@@ -121,32 +121,57 @@ const HomeScreen = ({navigation}) => {
     return matchesSearch && matchesCategory;
   });
 
-  const renderStockItem = ({item}) => (
-    <TouchableOpacity style={styles.stockCard} onPress ={() => navigation.navigate('Details', {stock: item})} >
-      <View>
-        <Text>{item.name}</Text>
-        <Text>{item.symbol}</Text>
+  const renderStockItem = ({ item }) => (
+    <TouchableOpacity 
+      style={styles.stockCard}
+      onPress={() => navigation.navigate('Details', { stock: item })}
+    >
+      <View style={styles.stockHeader}>
+        <Text style={styles.stockName}>{item.name}</Text>
+        <Text style={styles.stockSymbol}>{item.symbol}</Text>
       </View>
-      <Text>{item.description}</Text>
-      <View>
-        {item.symbol}!== 'PRIVATE' ? (
-          {item.price} !== 'N/A' ? (
+      
+      <Text style={styles.stockDescription} numberOfLines={2}>
+        {item.description}
+      </Text>
+      
+      <View style={styles.stockMetrics}>
+        {item.symbol !== 'PRIVATE' ? (
+          item.price !== 'N/A' ? (
             <>
-              <Text>${item.price}</Text>
-              <Text></Text>
-            
+              <Text style={styles.stockPrice}>${item.price}</Text>
+              <Text
+                style={[
+                  styles.stockChange,
+                  item.change.startsWith('+') ? styles.positiveChange : styles.negativeChange
+                ]}
+              >
+                {item.change} ({item.changePercent})
+              </Text>
             </>
+          ) : (
+            <Text style={styles.loadingPrice}>Loading price data...</Text>
           )
-        )
+        ) : (
+          <Text style={styles.privateStock}>Private Company</Text>
+        )}
       </View>
     </TouchableOpacity>
-  )
-  return(
-    <View style={styles.container}>
-      <Text style={styles.text}>Defense Stock Home Screen</Text>
-    </View>
   );
 };
+
+const renderCategoryFilter = () => (
+  <View style={styles.categoryFilter}>
+    <TouchableOpacity stle={[styles.categoryButton, selectedCategory === 'all' && styles.activeCategoryButton]} onPress={() => setSelectedCategory('all')}>
+      <Text style={styles.categoryButtonText}>All</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity style={[styles.categoryButton, selectedCategory === 'established' && styles.activeCategoryButton]} onPress={() => setSelectedCategory('established')}>
+      <Text style={styles.categoryButtonText}>Established</Text>
+    </TouchableOpacity>
+
+  </View>
+)
 
 const styles = StyleSheet.create({
   container: {
