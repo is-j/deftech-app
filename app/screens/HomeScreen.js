@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
+import { StyleSheet, View, Text, TouchableOpacity, TextInput, ActivityIndicator, FlatList } from "react-native";
 import {getDailyStockData, getCompanyOverview, getQuote} from '../services/alphaVantageService'
 
 
@@ -170,8 +170,47 @@ const renderCategoryFilter = () => (
       <Text style={styles.categoryButtonText}>Established</Text>
     </TouchableOpacity>
 
+    <TouchableOpacity style={[styles.categoryButton, selectedCategory === 'upcoming' && styles.activeCategoryButton]} onPress={() => setSelectedCategory('upcoming')}>
+      <Text stle={styles.categoryButtonText}>Upcoming</Text>
+    </TouchableOpacity>
   </View>
-)
+);
+return(
+  <View style={styles.container}>
+    <TextInput 
+      style={style.searchBar}
+      placeholder="Search defense stocks..."
+      placeholderTextColor="#999999"
+      value={searchQuery}
+      onChangeText={setSearchQuery}
+    />
+
+    {renderCategoryFilter()}
+
+    {loading && stocksData.length === 0 ? (
+      <View style={styles.loadingContainer}>
+        <ActivityInidcator size="large" color="00FF00"/>
+        <Text style={styles.loadingText}>Loading defense stocks...</Text>
+      </View>
+    ) : error ? (
+      <View style={styles.errorContainer}> 
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    ) : (
+      <FlatList
+        data={filteredStocks}
+        renderItem={renderStockItem}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.stockList}
+        refreshing={loading}
+        onRefresh={() => {
+          setLoading(true);
+          setStocksData([]);
+        }}
+      />
+    )}
+  </View>
+);
 
 const styles = StyleSheet.create({
   container: {
