@@ -43,7 +43,7 @@ export const getCompanyDetails = async (symbol) => {
 
 export const getHistoricalData = async (symbol, from, to) => {
   try {
-    console.log(`Fetching historical data for ${symbol}`);
+    console.log(`Fetching historical data for ${symbol} from ${from} to ${to}`);
     const response = await fetch(
       `${BASE_URL}/v2/aggs/ticker/${symbol}/range/1/day/${from}/${to}?apiKey=${POLYGON_API_KEY}`
     );
