@@ -111,6 +111,13 @@ const StockDetailsScreen = ({route, navigation}) => {
         };
     };
 
+    //function to render time range selector
+    const renderTimeRangeSelector = () => (
+        <View style={style.timeRangeContainer}>
+
+        </View>
+    )
+
     return(
         <View style={styles.container}>
             <Text> style={styles.text}Stock Details Screen</Text>

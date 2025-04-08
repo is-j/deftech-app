@@ -1,7 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from '@expo/vector-icons';
-
+//test
 // import all the screens
 import HomeScreen from './app/screens/HomeScreen';
 import NewsScreen from './app/screens/NewsScreen';
